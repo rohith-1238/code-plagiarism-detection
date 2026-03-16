@@ -1,0 +1,48 @@
+# ── Python ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+
+# ── Virtual Environment ─────────────────────────────
+venv/
+env/
+.venv/
+ENV/
+
+# ── Environment Variables (SENSITIVE) ──────────────
+.env
+*.env
+!.env.example
+
+# ── Database Files (data) - NOT schema.sql ──────────
+*.db
+*.sqlite
+*.sqlite3
+backend/plagiarism.db
+
+# ── Uploaded Files ──────────────────────────────────
+backend/uploads/
+backend/reports/
+
+# ── Node / React ────────────────────────────────────
+node_modules/
+frontend/node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# ── React Build ─────────────────────────────────────
+frontend/build/
+build/
+
+# ── IDE / Editor ────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ── Logs ────────────────────────────────────────────
+*.log
+logs/
