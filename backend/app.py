@@ -34,27 +34,24 @@ def create_app():
         print("Using SQLite database")
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY']         = os.getenv('SECRET_KEY')
-    app.config['JWT_SECRET_KEY']     = os.getenv('JWT_SECRET_KEY')
-    app.config['UPLOAD_FOLDER']      = os.getenv('UPLOAD_FOLDER', 'uploads')
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
+    app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs('reports', exist_ok=True)
 
-    allowed_origins = [
-        'http://localhost:3000',
-        os.getenv('FRONTEND_URL', ''),
-    ]
-    CORS(app, origins=allowed_origins, supports_credentials=True)
+    # ✅ FIXED CORS
+    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
     db.init_app(app)
     JWTManager(app)
 
     app.register_blueprint(auth_bp)
-    app.register_blueprint(upload_bp,   url_prefix='/api')
+    app.register_blueprint(upload_bp, url_prefix='/api')
     app.register_blueprint(analysis_bp, url_prefix='/api')
-    app.register_blueprint(history_bp,  url_prefix='/api')
+    app.register_blueprint(history_bp, url_prefix='/api')
 
     @app.route('/')
     def index():
@@ -65,6 +62,7 @@ def create_app():
         return {'status': 'ok'}, 200
 
     return app
+
 
 download_nltk_data()
 app = create_app()
