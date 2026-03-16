@@ -3,8 +3,8 @@ import axios from "axios";
 
 const AuthContext = createContext();
 
-// Use environment variable instead of localhost
-const API = `${process.env.REACT_APP_API_URL}/auth`;
+// ✅ Correct backend base URL
+const API = `${process.env.REACT_APP_API_URL}/api/auth`;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -76,4 +76,5 @@ export function AuthProvider({ children }) {
   );
 }
 
+// Custom hook
 export const useAuth = () => useContext(AuthContext);
