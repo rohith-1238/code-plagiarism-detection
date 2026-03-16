@@ -42,7 +42,7 @@ def create_app():
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs('reports', exist_ok=True)
 
-    # ✅ FIXED CORS
+    # CORS
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
     db.init_app(app)
@@ -67,8 +67,10 @@ def create_app():
 download_nltk_data()
 app = create_app()
 
+# ✅ CREATE TABLES FOR RENDER DEPLOYMENT
+with app.app_context():
+    db.create_all()
+    print("Database tables created successfully")
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        print("Database tables created")
     app.run(debug=False, port=5000)
