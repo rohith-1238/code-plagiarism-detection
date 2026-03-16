@@ -51,7 +51,7 @@ def create_app():
     db.init_app(app)
     JWTManager(app)
 
-    app.register_blueprint(auth_bp,     url_prefix='/api/auth')
+    app.register_blueprint(auth_bp)
     app.register_blueprint(upload_bp,   url_prefix='/api')
     app.register_blueprint(analysis_bp, url_prefix='/api')
     app.register_blueprint(history_bp,  url_prefix='/api')
