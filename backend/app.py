@@ -34,8 +34,8 @@ def create_app():
         print("Using SQLite database")
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY']         = os.getenv('SECRET_KEY', 'dev-secret-key')
-    app.config['JWT_SECRET_KEY']     = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key')
+    app.config['SECRET_KEY']         = os.getenv('SECRET_KEY')
+    app.config['JWT_SECRET_KEY']     = os.getenv('JWT_SECRET_KEY')
     app.config['UPLOAD_FOLDER']      = os.getenv('UPLOAD_FOLDER', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
