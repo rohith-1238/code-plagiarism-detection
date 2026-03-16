@@ -29,13 +29,14 @@ API.interceptors.response.use(
   }
 );
 
-export const signup = (data) => API.post("/auth/signup", data);
-export const login = (data) => API.post("/auth/login", data);
-export const logout = () => API.post("/auth/logout");
-export const getMe = () => API.get("/auth/me");
+// ✅ FIXED ROUTES
+export const signup = (data) => API.post("/api/auth/signup", data);
+export const login = (data) => API.post("/api/auth/login", data);
+export const logout = () => API.post("/api/auth/logout");
+export const getMe = () => API.get("/api/auth/me");
 
 export const uploadFiles = (formData, onProgress) =>
-  API.post("/upload", formData, {
+  API.post("/api/upload", formData, {
     headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress: (e) => {
       if (onProgress && e.total) {
@@ -44,9 +45,9 @@ export const uploadFiles = (formData, onProgress) =>
     },
   });
 
-export const getAnalysis = (id) => API.get(`/analysis/${id}`);
+export const getAnalysis = (id) => API.get(`/api/analysis/${id}`);
 
-export const getHistory = () => API.get("/history");
-export const deleteAnalysis = (id) => API.delete(`/history/${id}`);
+export const getHistory = () => API.get("/api/history");
+export const deleteAnalysis = (id) => API.delete(`/api/history/${id}`);
 
 export default API;
