@@ -14,8 +14,14 @@ auth_bp = Blueprint("auth_bp", __name__, url_prefix="/api/auth")
 # -------------------------
 # SIGNUP
 # -------------------------
-@auth_bp.route("/signup", methods=["POST"])
+@auth_bp.route("/signup", methods=["GET", "POST"])
 def signup():
+
+    # If opened in browser
+    if request.method == "GET":
+        return jsonify({
+            "message": "Signup endpoint working. Use POST request."
+        }), 200
 
     data = request.get_json()
 
@@ -35,7 +41,7 @@ def signup():
     if password != confirm_password:
         return jsonify({"error": "Passwords do not match"}), 400
 
-    # check if user already exists
+    # check if user exists
     existing_user = User.query.filter_by(email=email).first()
 
     if existing_user:
@@ -65,8 +71,13 @@ def signup():
 # -------------------------
 # LOGIN
 # -------------------------
-@auth_bp.route("/login", methods=["POST"])
+@auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+
+    if request.method == "GET":
+        return jsonify({
+            "message": "Login endpoint working. Use POST request."
+        }), 200
 
     data = request.get_json()
 
@@ -84,7 +95,6 @@ def login():
     if not user:
         return jsonify({"error": "Invalid email or password"}), 401
 
-    # check password
     if not check_password_hash(user.password_hash, password):
         return jsonify({"error": "Invalid email or password"}), 401
 
