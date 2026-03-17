@@ -36,7 +36,7 @@ function FileItem({ file, onRemove }) {
         </div>
       </div>
       <button onClick={() => onRemove(file.name)}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1rem', padding: '0.2rem' }}>
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1rem' }}>
         ✕
       </button>
     </div>
@@ -81,7 +81,6 @@ export default function UploadPage() {
 
     const formData = new FormData();
 
-    // ✅ IMPORTANT: must match backend key "files"
     files.forEach(f => {
       formData.append('files', f);
     });
@@ -94,23 +93,15 @@ export default function UploadPage() {
     setProgress(0);
 
     try {
-      console.log("Uploading files:", files); // 🔍 DEBUG
-
       const { data } = await uploadFiles(formData, setProgress);
-
-      console.log("Response:", data); // 🔍 DEBUG
 
       toast.success('Analysis complete!');
       navigate('/results', { state: { result: data.result } });
 
     } catch (err) {
-      console.error("UPLOAD ERROR:", err.response || err);
-
-      // ✅ SHOW FULL BACKEND ERROR (fixes 422 confusion)
       const msg =
         err.response?.data?.error ||
         err.response?.data?.details ||
-        JSON.stringify(err.response?.data) ||
         'Upload failed. Please try again.';
 
       toast.error(msg);
@@ -122,58 +113,48 @@ export default function UploadPage() {
   return (
     <div className="app-layout">
       <Sidebar />
+
       <main className="main-content fade-in">
+        {/* Header */}
         <div style={{ marginBottom: '2rem' }}>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-            <span className="glow-dot" style={{ display: 'inline-block', width: 6, height: 6, marginRight: 6 }} />
             Upload Files
           </div>
           <h1 style={{ fontSize: '1.75rem' }}>Upload Code Files</h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>
             Upload 2 or more code files to compare for plagiarism.
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem', alignItems: 'start' }}>
-          
-          {/* Drop zone */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem' }}>
+
+          {/* LEFT: Dropzone */}
           <div>
             <div
               {...getRootProps()}
               style={{
-                border: `2px dashed ${isDragActive ? 'var(--violet)' : 'var(--border)'}`,
-                borderRadius: 'var(--radius-lg)',
-                padding: '3rem 2rem',
+                border: `2px dashed ${isDragActive ? '#8a2be2' : 'var(--border)'}`,
+                borderRadius: '12px',
+                padding: '3rem',
                 textAlign: 'center',
                 cursor: 'pointer',
-                background: isDragActive ? 'rgba(138,43,226,0.05)' : 'var(--bg-card)',
-                transition: 'all 0.2s ease',
-                marginBottom: '1rem',
+                background: 'var(--bg-card)'
               }}
             >
               <input {...getInputProps()} />
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⬆</div>
-              <h3 style={{ marginBottom: '0.5rem', color: isDragActive ? 'var(--violet-light)' : 'var(--text-primary)' }}>
-                {isDragActive ? 'Drop files here' : 'Drag & drop code files'}
-              </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+              <div style={{ fontSize: '2.5rem' }}>⬆</div>
+              <h3>{isDragActive ? 'Drop files here' : 'Drag & drop code files'}</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                 or click to browse — .py, .java, .js, .cpp, .c and more
               </p>
             </div>
 
-            {/* File list */}
+            {/* File List */}
             {files.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  marginBottom: '0.5rem',
-                }}>
-                  <span style={{ fontWeight: 600 }}>
-                    {files.length} file{files.length > 1 ? 's' : ''} selected
-                  </span>
-                  <button onClick={() => setFiles([])} className="btn btn-danger">
-                    Clear all
-                  </button>
+              <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{files.length} files selected</span>
+                  <button onClick={() => setFiles([])}>Clear</button>
                 </div>
 
                 {files.map(f => (
@@ -183,27 +164,88 @@ export default function UploadPage() {
             )}
           </div>
 
-          {/* Settings panel */}
-          <div className="card">
+          {/* RIGHT: Analysis Settings */}
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            borderRadius: '12px',
+            padding: '1.5rem'
+          }}>
             <h3>Analysis Settings</h3>
 
-            <select value={language} onChange={e => setLanguage(e.target.value)}>
-              {LANGUAGES.map(l => <option key={l}>{l}</option>)}
-            </select>
+            {/* Language */}
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                PROGRAMMING LANGUAGE
+              </label>
 
+              <select
+                value={language}
+                onChange={e => setLanguage(e.target.value)}
+                style={{
+                  width: '100%',
+                  marginTop: '0.4rem',
+                  padding: '0.6rem',
+                  borderRadius: '8px',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)'
+                }}
+              >
+                {LANGUAGES.map(l => <option key={l}>{l}</option>)}
+              </select>
+            </div>
+
+            {/* Algorithms */}
+            <div style={{
+              marginTop: '1rem',
+              background: 'var(--bg-surface)',
+              padding: '0.8rem',
+              borderRadius: '10px'
+            }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Algorithms Used
+              </div>
+
+              <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.85rem' }}>
+                <li>✔ TF-IDF Vectorization</li>
+                <li>✔ Cosine Similarity</li>
+                <li>✔ Jaccard Index</li>
+                <li>✔ Token Normalisation</li>
+              </ul>
+            </div>
+
+            {/* Progress */}
             {loading && (
-              <div>
+              <div style={{ marginTop: '1rem' }}>
                 <p>{progress}%</p>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${progress}%` }} />
+                <div style={{ height: '6px', background: '#333', borderRadius: '6px' }}>
+                  <div style={{ width: `${progress}%`, height: '100%', background: '#8a2be2' }} />
                 </div>
               </div>
             )}
 
-            <button onClick={handleSubmit} disabled={loading || files.length < 2}>
+            {/* Button */}
+            <button
+              onClick={handleSubmit}
+              disabled={loading || files.length < 2}
+              style={{
+                marginTop: '1rem',
+                width: '100%',
+                padding: '0.7rem',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #6a0dad, #8a2be2)',
+                color: '#fff',
+                border: 'none'
+              }}
+            >
               {loading ? 'Analyzing...' : 'Analyze'}
             </button>
+
+            <p style={{ fontSize: '0.7rem', textAlign: 'center', marginTop: '0.5rem' }}>
+              Need at least 2 files
+            </p>
           </div>
+
         </div>
       </main>
     </div>
