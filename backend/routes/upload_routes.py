@@ -16,7 +16,6 @@ from plagiarism_detector import PlagiarismDetector
 
 upload_bp = Blueprint("upload", __name__)
 
-# Allowed programming file extensions
 ALLOWED_EXTENSIONS = {
     "py", "java", "js", "ts", "c", "cpp", "cs",
     "rb", "go", "php", "swift", "kt", "rs",
@@ -24,35 +23,16 @@ ALLOWED_EXTENSIONS = {
 }
 
 
-# ---------------------------------------------
-# Helper Functions
-# ---------------------------------------------
-
-def allowed_file(filename: str) -> bool:
-    """Check if uploaded file extension is allowed"""
-    if "." not in filename:
-        return False
-    ext = filename.rsplit(".", 1)[1].lower()
-    return ext in ALLOWED_EXTENSIONS
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def infer_language(filenames: list) -> str:
-    """Infer programming language from file extension"""
-
+def infer_language(filenames):
     ext_map = {
-        "py": "Python",
-        "java": "Java",
-        "js": "JavaScript",
-        "ts": "TypeScript",
-        "c": "C",
-        "cpp": "C++",
-        "cs": "C#",
-        "rb": "Ruby",
-        "go": "Go",
-        "php": "PHP",
-        "swift": "Swift",
-        "kt": "Kotlin",
-        "rs": "Rust"
+        "py": "Python", "java": "Java", "js": "JavaScript",
+        "ts": "TypeScript", "c": "C", "cpp": "C++",
+        "cs": "C#", "rb": "Ruby", "go": "Go",
+        "php": "PHP", "swift": "Swift", "kt": "Kotlin", "rs": "Rust"
     }
 
     for name in filenames:
@@ -63,35 +43,25 @@ def infer_language(filenames: list) -> str:
     return "Unknown"
 
 
-# ---------------------------------------------
-# Upload Route
-# ---------------------------------------------
-
 @upload_bp.route("/upload", methods=["POST"])
 @jwt_required()
 def upload_files():
-    """
-    Upload ≥2 code files and run plagiarism analysis
-    """
-
     try:
+        print("FILES:", request.files)
+        print("FORM:", request.form)
 
         user_id = int(get_jwt_identity())
 
-        # Check files exist
         if "files" not in request.files:
             return jsonify({"error": "No files uploaded"}), 400
 
         files = request.files.getlist("files")
 
         if len(files) < 2:
-            return jsonify({
-                "error": "Upload at least two files for comparison"
-            }), 400
+            return jsonify({"error": "Upload at least two files"}), 400
 
         upload_folder = current_app.config["UPLOAD_FOLDER"]
 
-        # Create unique folder for session
         session_id = str(uuid.uuid4())
         session_dir = os.path.join(upload_folder, session_id)
         os.makedirs(session_dir, exist_ok=True)
@@ -99,58 +69,33 @@ def upload_files():
         code_files = {}
         file_names = []
 
-        # -----------------------------------------
-        # Save and read files
-        # -----------------------------------------
         for file in files:
-
             if file.filename == "":
                 continue
 
             if not allowed_file(file.filename):
-                return jsonify({
-                    "error": f"File type not allowed: {file.filename}"
-                }), 400
+                return jsonify({"error": f"File type not allowed: {file.filename}"}), 400
 
             filename = secure_filename(file.filename)
             file_path = os.path.join(session_dir, filename)
-
             file.save(file_path)
 
-            try:
-                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                    code = f.read()
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                code = f.read()
 
-                code_files[filename] = code
-                file_names.append(filename)
-
-            except Exception as e:
-                return jsonify({
-                    "error": f"Unable to read file {filename}",
-                    "details": str(e)
-                }), 500
+            code_files[filename] = code
+            file_names.append(filename)
 
         if len(code_files) < 2:
-            return jsonify({
-                "error": "At least two valid code files are required"
-            }), 400
-
-        # -----------------------------------------
-        # Run Plagiarism Detection
-        # -----------------------------------------
+            return jsonify({"error": "At least two valid files required"}), 400
 
         language = request.form.get("language") or infer_language(file_names)
 
         detector = PlagiarismDetector(language=language)
-
         result = detector.analyze(code_files)
 
         if "error" in result:
             return jsonify(result), 400
-
-        # -----------------------------------------
-        # Save result to database
-        # -----------------------------------------
 
         analysis = Analysis(
             user_id=user_id,
@@ -173,6 +118,7 @@ def upload_files():
         }), 200
 
     except Exception as e:
+        print("ERROR:", str(e))
         return jsonify({
             "error": "Server error during analysis",
             "details": str(e)
