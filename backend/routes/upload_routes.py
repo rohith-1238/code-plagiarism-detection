@@ -47,11 +47,20 @@ def infer_language(filenames):
 @jwt_required()
 def upload_files():
     try:
+        # 🔍 DEBUG (very important)
+        print("JWT IDENTITY:", get_jwt_identity())
         print("FILES:", request.files)
         print("FORM:", request.form)
 
-        user_id = int(get_jwt_identity())
+        # ✅ FIX: consistent with auth_routes (string → int)
+        try:
+            user_id = int(get_jwt_identity())
+        except Exception:
+            return jsonify({
+                "error": "Invalid user identity in token"
+            }), 422
 
+        # ✅ VALIDATION
         if "files" not in request.files:
             return jsonify({"error": "No files uploaded"}), 400
 
@@ -60,7 +69,7 @@ def upload_files():
         if len(files) < 2:
             return jsonify({"error": "Upload at least two files"}), 400
 
-        upload_folder = current_app.config["UPLOAD_FOLDER"]
+        upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
 
         session_id = str(uuid.uuid4())
         session_dir = os.path.join(upload_folder, session_id)
@@ -70,33 +79,49 @@ def upload_files():
         file_names = []
 
         for file in files:
-            if file.filename == "":
+            if not file or file.filename == "":
                 continue
 
             if not allowed_file(file.filename):
-                return jsonify({"error": f"File type not allowed: {file.filename}"}), 400
+                return jsonify({
+                    "error": f"File type not allowed: {file.filename}"
+                }), 400
 
             filename = secure_filename(file.filename)
             file_path = os.path.join(session_dir, filename)
+
             file.save(file_path)
 
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                code = f.read()
+            try:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    code = f.read()
+            except Exception:
+                return jsonify({
+                    "error": f"Could not read file: {filename}"
+                }), 400
 
             code_files[filename] = code
             file_names.append(filename)
 
         if len(code_files) < 2:
-            return jsonify({"error": "At least two valid files required"}), 400
+            return jsonify({
+                "error": "At least two valid files required"
+            }), 400
 
+        # ✅ Language detection
         language = request.form.get("language") or infer_language(file_names)
 
+        # ✅ Run analysis
         detector = PlagiarismDetector(language=language)
         result = detector.analyze(code_files)
 
-        if "error" in result:
-            return jsonify(result), 400
+        if not result or "error" in result:
+            return jsonify({
+                "error": "Analysis failed",
+                "details": result.get("error") if result else "Unknown error"
+            }), 400
 
+        # ✅ Save to DB
         analysis = Analysis(
             user_id=user_id,
             file_names=json.dumps(file_names),
@@ -118,7 +143,7 @@ def upload_files():
         }), 200
 
     except Exception as e:
-        print("ERROR:", str(e))
+        print("UPLOAD ERROR:", str(e))
         return jsonify({
             "error": "Server error during analysis",
             "details": str(e)
