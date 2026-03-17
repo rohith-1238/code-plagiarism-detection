@@ -17,55 +17,61 @@ auth_bp = Blueprint("auth_bp", __name__, url_prefix="/api/auth")
 @auth_bp.route("/signup", methods=["GET", "POST"])
 def signup():
 
-    # If opened in browser
     if request.method == "GET":
         return jsonify({
             "message": "Signup endpoint working. Use POST request."
         }), 200
 
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    if not data:
-        return jsonify({"error": "Invalid request"}), 400
+        if not data:
+            return jsonify({"error": "Invalid request"}), 400
 
-    name = data.get("name")
-    email = data.get("email")
-    password = data.get("password")
-    confirm_password = data.get("confirm_password")
+        name = data.get("name")
+        email = data.get("email")
+        password = data.get("password")
+        confirm_password = data.get("confirm_password")
 
-    # check fields
-    if not name or not email or not password or not confirm_password:
-        return jsonify({"error": "All fields are required"}), 400
+        # validation
+        if not name or not email or not password or not confirm_password:
+            return jsonify({"error": "All fields are required"}), 400
 
-    # check password match
-    if password != confirm_password:
-        return jsonify({"error": "Passwords do not match"}), 400
+        if password != confirm_password:
+            return jsonify({"error": "Passwords do not match"}), 400
 
-    # check if user exists
-    existing_user = User.query.filter_by(email=email).first()
+        existing_user = User.query.filter_by(email=email).first()
 
-    if existing_user:
-        return jsonify({"error": "User already exists"}), 409
+        if existing_user:
+            return jsonify({"error": "User already exists"}), 409
 
-    # hash password
-    hashed_password = generate_password_hash(password)
+        # hash password
+        hashed_password = generate_password_hash(password)
 
-    new_user = User(
-        name=name,
-        email=email,
-        password_hash=hashed_password
-    )
+        new_user = User(
+            name=name,
+            email=email,
+            password_hash=hashed_password
+        )
 
-    db.session.add(new_user)
-    db.session.commit()
+        db.session.add(new_user)
+        db.session.commit()
 
-    access_token = create_access_token(identity=new_user.user_id)
+        # ✅ FIX: store identity as STRING
+        access_token = create_access_token(identity=str(new_user.user_id))
 
-    return jsonify({
-        "message": "User created successfully",
-        "token": access_token,
-        "user": new_user.to_dict()
-    }), 201
+        return jsonify({
+            "message": "User created successfully",
+            "token": access_token,
+            "user": new_user.to_dict()
+        }), 201
+
+    except Exception as e:
+        print("SIGNUP ERROR:", str(e))
+        return jsonify({
+            "error": "Server error",
+            "details": str(e)
+        }), 500
 
 
 # -------------------------
@@ -79,29 +85,38 @@ def login():
             "message": "Login endpoint working. Use POST request."
         }), 200
 
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    if not data:
-        return jsonify({"error": "Invalid request"}), 400
+        if not data:
+            return jsonify({"error": "Invalid request"}), 400
 
-    email = data.get("email")
-    password = data.get("password")
+        email = data.get("email")
+        password = data.get("password")
 
-    if not email or not password:
-        return jsonify({"error": "Email and password required"}), 400
+        if not email or not password:
+            return jsonify({"error": "Email and password required"}), 400
 
-    user = User.query.filter_by(email=email).first()
+        user = User.query.filter_by(email=email).first()
 
-    if not user:
-        return jsonify({"error": "Invalid email or password"}), 401
+        if not user:
+            return jsonify({"error": "Invalid email or password"}), 401
 
-    if not check_password_hash(user.password_hash, password):
-        return jsonify({"error": "Invalid email or password"}), 401
+        if not check_password_hash(user.password_hash, password):
+            return jsonify({"error": "Invalid email or password"}), 401
 
-    token = create_access_token(identity=user.user_id)
+        # ✅ FIX: store identity as STRING
+        token = create_access_token(identity=str(user.user_id))
 
-    return jsonify({
-        "message": "Login successful",
-        "token": token,
-        "user": user.to_dict()
-    }), 200
+        return jsonify({
+            "message": "Login successful",
+            "token": token,
+            "user": user.to_dict()
+        }), 200
+
+    except Exception as e:
+        print("LOGIN ERROR:", str(e))
+        return jsonify({
+            "error": "Server error",
+            "details": str(e)
+        }), 500
