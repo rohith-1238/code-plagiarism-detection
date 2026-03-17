@@ -5,6 +5,7 @@ const API = axios.create({
   timeout: 60000,
 });
 
+// Attach JWT token automatically
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 
@@ -16,6 +17,7 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle auth errors
 API.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -24,20 +26,19 @@ API.interceptors.response.use(
       localStorage.removeItem("user");
       window.location.replace("/login");
     }
-
     return Promise.reject(err);
   }
 );
 
-// ✅ FIXED ROUTES
+// AUTH ROUTES
 export const signup = (data) => API.post("/api/auth/signup", data);
 export const login = (data) => API.post("/api/auth/login", data);
 export const logout = () => API.post("/api/auth/logout");
 export const getMe = () => API.get("/api/auth/me");
 
+// ✅ FIXED FILE UPLOAD (NO manual Content-Type)
 export const uploadFiles = (formData, onProgress) =>
   API.post("/api/upload", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress: (e) => {
       if (onProgress && e.total) {
         onProgress(Math.round((e.loaded * 100) / e.total));
@@ -45,8 +46,8 @@ export const uploadFiles = (formData, onProgress) =>
     },
   });
 
+// OTHER ROUTES
 export const getAnalysis = (id) => API.get(`/api/analysis/${id}`);
-
 export const getHistory = () => API.get("/api/history");
 export const deleteAnalysis = (id) => API.delete(`/api/history/${id}`);
 
