@@ -54,9 +54,11 @@ export default function UploadPage() {
     const valid = accepted.filter(f =>
       ALLOWED_EXT.some(ext => f.name.toLowerCase().endsWith(ext))
     );
+
     if (valid.length < accepted.length) {
       toast.error('Some files were skipped (unsupported type).');
     }
+
     setFiles(prev => {
       const names = new Set(prev.map(f => f.name));
       return [...prev, ...valid.filter(f => !names.has(f.name))];
@@ -78,18 +80,39 @@ export default function UploadPage() {
     }
 
     const formData = new FormData();
-    files.forEach(f => formData.append('files', f));
-    if (language !== 'Auto-detect') formData.append('language', language);
+
+    // ✅ IMPORTANT: must match backend key "files"
+    files.forEach(f => {
+      formData.append('files', f);
+    });
+
+    if (language !== 'Auto-detect') {
+      formData.append('language', language);
+    }
 
     setLoading(true);
     setProgress(0);
 
     try {
+      console.log("Uploading files:", files); // 🔍 DEBUG
+
       const { data } = await uploadFiles(formData, setProgress);
+
+      console.log("Response:", data); // 🔍 DEBUG
+
       toast.success('Analysis complete!');
       navigate('/results', { state: { result: data.result } });
+
     } catch (err) {
-      const msg = err.response?.data?.error || 'Upload failed. Please try again.';
+      console.error("UPLOAD ERROR:", err.response || err);
+
+      // ✅ SHOW FULL BACKEND ERROR (fixes 422 confusion)
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.details ||
+        JSON.stringify(err.response?.data) ||
+        'Upload failed. Please try again.';
+
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -112,6 +135,7 @@ export default function UploadPage() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem', alignItems: 'start' }}>
+          
           {/* Drop zone */}
           <div>
             <div
@@ -144,14 +168,14 @@ export default function UploadPage() {
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   marginBottom: '0.5rem',
                 }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+                  <span style={{ fontWeight: 600 }}>
                     {files.length} file{files.length > 1 ? 's' : ''} selected
                   </span>
-                  <button onClick={() => setFiles([])}
-                    className="btn btn-danger" style={{ padding: '0.3rem 0.75rem', fontSize: '0.8rem' }}>
+                  <button onClick={() => setFiles([])} className="btn btn-danger">
                     Clear all
                   </button>
                 </div>
+
                 {files.map(f => (
                   <FileItem key={f.name} file={f} onRemove={removeFile} />
                 ))}
@@ -160,62 +184,25 @@ export default function UploadPage() {
           </div>
 
           {/* Settings panel */}
-          <div className="card" style={{ position: 'sticky', top: '2rem' }}>
-            <h3 style={{ marginBottom: '1.25rem' }}>Analysis Settings</h3>
+          <div className="card">
+            <h3>Analysis Settings</h3>
 
-            <div className="form-group">
-              <label>Programming Language</label>
-              <select value={language} onChange={e => setLanguage(e.target.value)}>
-                {LANGUAGES.map(l => <option key={l}>{l}</option>)}
-              </select>
-            </div>
+            <select value={language} onChange={e => setLanguage(e.target.value)}>
+              {LANGUAGES.map(l => <option key={l}>{l}</option>)}
+            </select>
 
-            <div style={{
-              padding: '0.75rem', background: 'var(--bg-surface)',
-              borderRadius: 'var(--radius-sm)', marginBottom: '1.25rem',
-            }}>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
-                Algorithms Used
-              </div>
-              {['TF-IDF Vectorization', 'Cosine Similarity', 'Jaccard Index', 'Token Normalisation'].map(a => (
-                <div key={a} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  <span style={{ color: 'var(--green)' }}>✓</span> {a}
-                </div>
-              ))}
-            </div>
-
-            {/* Progress bar (visible during upload) */}
             {loading && (
-              <div style={{ marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-                  <span>Analyzing…</span>
-                  <span>{progress}%</span>
-                </div>
+              <div>
+                <p>{progress}%</p>
                 <div className="progress-bar">
-                  <div className="progress-fill" style={{
-                    width: `${progress}%`,
-                    background: 'var(--violet)',
-                  }} />
+                  <div className="progress-fill" style={{ width: `${progress}%` }} />
                 </div>
               </div>
             )}
 
-            <button
-              onClick={handleSubmit}
-              className="btn btn-primary"
-              style={{ width: '100%', justifyContent: 'center', padding: '0.85rem' }}
-              disabled={loading || files.length < 2}
-            >
-              {loading
-                ? <><span className="loader" style={{ width: 16, height: 16 }} /> Analyzing…</>
-                : `⬡ Analyze ${files.length > 0 ? `${files.length} Files` : ''}`}
+            <button onClick={handleSubmit} disabled={loading || files.length < 2}>
+              {loading ? 'Analyzing...' : 'Analyze'}
             </button>
-
-            {files.length < 2 && (
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.5rem' }}>
-                Need at least 2 files
-              </p>
-            )}
           </div>
         </div>
       </main>
